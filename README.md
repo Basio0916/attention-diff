@@ -1,6 +1,6 @@
 # Attention Diff
 
-Attention Diff は、GitHub Pull Request の diff を、人間の確認必要度に応じた濃淡つきビューで表示するローカルプラグインです。
+Attention Diff は、GitHub Pull Request の diff を、人間の確認必要度に応じた濃淡つきビューで表示する Codex / Claude Code 用プラグインです。
 
 目的は人間のレビューを置き換えることではありません。レビュアーが「どこを先に見るべきか」を判断しやすくすることです。
 
