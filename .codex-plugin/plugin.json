@@ -2,6 +2,7 @@
   "name": "attention-diff",
   "version": "0.1.0",
   "description": "Render GitHub PR diffs with AI-scored attention heatmaps.",
+  "license": "MIT",
   "author": {
     "name": "Attention Diff contributors"
   },
