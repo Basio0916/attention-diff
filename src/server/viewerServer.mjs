@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateAttention } from "../attention/validateAttention.mjs";
 
 const viewerDir = join(dirname(fileURLToPath(import.meta.url)), "..", "viewer");
 const vendorDir = join(viewerDir, "vendor");
@@ -77,9 +78,15 @@ async function handleRequest({ request, response, workspaceDir }) {
   );
   if (artifactMatch) {
     const [, runId, filename] = artifactMatch;
+    const runDir = join(workspaceDir, ".attention-diff", "runs", runId);
+    if (filename === "validation.json") {
+      await sendValidation(response, runDir);
+      return;
+    }
+
     await sendFile(
       response,
-      join(workspaceDir, ".attention-diff", "runs", runId, filename),
+      join(runDir, filename),
       contentTypes[".json"]
     );
     return;
@@ -95,6 +102,28 @@ async function sendFile(response, path, contentType) {
     response.end(body);
   } catch {
     sendStatus(response, 404);
+  }
+}
+
+async function sendValidation(response, runDir) {
+  const diffJson = await readJson(join(runDir, "diff.json"), "diff.json");
+  const attentionJson = await readJson(join(runDir, "attention.json"), "attention.json");
+  const readErrors = [...diffJson.errors, ...attentionJson.errors];
+  const result = readErrors.length > 0
+    ? { valid: false, errors: readErrors, warnings: [] }
+    : validateAttention({ diffJson: diffJson.value, attentionJson: attentionJson.value });
+
+  sendJson(response, result);
+}
+
+async function readJson(path, label) {
+  try {
+    return { value: JSON.parse(await readFile(path, "utf8")), errors: [] };
+  } catch (error) {
+    return {
+      value: null,
+      errors: [`Failed to read or parse ${label}: ${error.message}`]
+    };
   }
 }
 

@@ -19,7 +19,8 @@ HTMLはrunごとに静的生成しない。固定viewerが `diff.json` と `atte
 - `gh pr view` を取得する
 - `gh pr diff` を取得する
 - `.attention-diff/runs/<runId>/` を作る
-- `pr.json` と `raw.diff` を保存する
+- `diff.json` を保存する
+- `--keep-artifacts` 指定時だけ `pr.json`, `raw.diff`, `scoring-prompt.md` を保存する
 
 `runId` は以下の形式にする。
 
@@ -29,7 +30,7 @@ pr-<number>-<headSha7>-<diffId8>
 
 ## マイルストーン2: diff.json
 
-`raw.diff` から `diff.json` を生成する。
+`gh pr diff` の結果から `diff.json` を生成する。
 
 `diff.json` は以下を保持する。
 
@@ -89,7 +90,7 @@ Reference Validation:
 
 validation error がある場合はAIにrepairを依頼する。repairは最大2回までとする。
 
-2回失敗した場合は `validation.json` にエラーを残し、viewerは通常diff表示にフォールバックする。
+2回失敗した場合はvalidation結果を表示し、viewerは通常diff表示にフォールバックする。validation結果は通常runの成果物としては保存しない。
 
 ## マイルストーン5: 固定viewer server
 

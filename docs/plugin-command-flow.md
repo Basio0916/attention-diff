@@ -25,7 +25,7 @@ Until the full plugin wrapper exists, the following commands expose the same flo
 node scripts/attention-diff-prepare.mjs 190
 ```
 
-2. Open the printed `scoring-prompt.md`.
+2. Read the printed `diffPath`.
 
 3. Ask Codex or Claude Code to generate `attention.json` at the printed path.
    The prompt uses `diff.json` directly as the AI scoring input.
@@ -47,6 +47,24 @@ The serve command reuses the existing workspace viewer server when `.attention-d
 
 6. Open the printed URL.
 
+## Debug Artifacts
+
+By default, a run directory keeps only the stable renderer artifacts:
+
+```text
+.attention-diff/runs/<runId>/
+  diff.json
+  attention.json
+```
+
+When parser or prompt debugging is needed, pass `--keep-artifacts`:
+
+```bash
+node scripts/attention-diff.mjs 190 --keep-artifacts
+```
+
+This additionally keeps `pr.json`, `raw.diff`, and `scoring-prompt.md`.
+
 ## Repair Rule
 
-If validation fails, provide `validation.json` and the original `attention.json` to Codex or Claude Code and ask it to fix only `attention.json`. Run validation again. Try repair at most two times.
+If validation fails, provide the validation command output and the original `attention.json` to Codex or Claude Code and ask it to fix only `attention.json`. Run validation again. Try repair at most two times.

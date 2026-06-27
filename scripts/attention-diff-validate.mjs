@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { validateAttention } from "../src/attention/validateAttention.mjs";
 
@@ -16,7 +16,6 @@ const result = readErrors.length > 0
   ? { valid: false, errors: readErrors, warnings: [] }
   : validateAttention({ diffJson: diffJson.value, attentionJson: attentionJson.value });
 
-await writeFile(join(runDir, "validation.json"), `${JSON.stringify(result, null, 2)}\n`);
 console.log(JSON.stringify(result, null, 2));
 
 if (!result.valid) {

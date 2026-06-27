@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -58,6 +58,41 @@ test("viewer server serves run page and run artifacts", async () => {
     assert.equal(diffResponse.status, 200);
     const diffJson = await diffResponse.json();
     assert.equal(diffJson.diffId, "sha256:test");
+  } finally {
+    if (server) {
+      await server.close();
+    }
+    await rm(workspaceDir, { recursive: true, force: true });
+  }
+});
+
+test("viewer server computes validation without writing validation.json", async () => {
+  const workspaceDir = await mkdtemp(join(tmpdir(), "attention-diff-"));
+  const runId = "pr-190-def4567-a1b2c3d4";
+  const runDir = join(workspaceDir, ".attention-diff", "runs", runId);
+
+  await mkdir(runDir, { recursive: true });
+  await writeFile(
+    join(runDir, "diff.json"),
+    `${JSON.stringify({ schemaVersion: "0.1", diffId: "sha256:test", files: [] })}\n`
+  );
+  await writeFile(
+    join(runDir, "attention.json"),
+    `${JSON.stringify({ schemaVersion: "0.1", targetDiffId: "sha256:other", files: [] })}\n`
+  );
+
+  let server;
+  try {
+    server = await startViewerServer({ workspaceDir, port: 0 });
+
+    const validationResponse = await fetch(
+      `http://127.0.0.1:${server.port}/api/runs/${runId}/validation.json`
+    );
+    assert.equal(validationResponse.status, 200);
+    const validationJson = await validationResponse.json();
+    assert.equal(validationJson.valid, false);
+    assert.match(validationJson.errors.join("\n"), /targetDiffId/);
+    await assert.rejects(access(join(runDir, "validation.json")));
   } finally {
     if (server) {
       await server.close();

@@ -17,9 +17,10 @@ Run Attention Diff for a GitHub pull request in the current repository.
 node <plugin-root>/scripts/attention-diff.mjs <pr-number-or-url>
 ```
 
-4. Read the printed `scoring-prompt.md`.
+4. Read the printed `diffPath`.
    - `diff.json` is the AI scoring input and renderer source of truth.
-   - There is no `scoring-input.json` in the MVP flow.
+   - Normal runs leave only `diff.json` and `attention.json` in the run directory.
+   - Use `--keep-artifacts` only when you need debug files such as `raw.diff`, `pr.json`, or `scoring-prompt.md`.
 5. Produce `attention.json` at the printed `attentionPath`.
    - Return JSON only in the file.
    - Do not include code text in `attention.json`.
@@ -45,4 +46,3 @@ node <plugin-root>/scripts/attention-diff-serve.mjs <runId>
 ## Scoring Principle
 
 Emphasize human judgment need, not generic risk. Deemphasize mechanical, generated, import-only, formatting-only, or high-confidence copied-pattern changes. Always explain both highlighted and deemphasized groups in Japanese.
-

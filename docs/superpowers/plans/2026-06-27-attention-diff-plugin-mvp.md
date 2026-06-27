@@ -6,12 +6,8 @@
 
 ```text
 gh pr view / gh pr diff
-  -> pr.json
-  -> raw.diff
   -> diff.json
-  -> scoring-prompt.md
   -> attention.json
-  -> validation.json
   -> fixed local viewer
 ```
 
@@ -21,12 +17,14 @@ Each run is written under `.attention-diff/runs/<runId>/`.
 
 Required artifacts:
 
+- `diff.json`: parsed diff, stable IDs, line content, file/hunk/line structure.
+- `attention.json`: AI-produced scores and reasons, referencing only IDs from `diff.json`.
+
+Debug-only artifacts with `--keep-artifacts`:
+
 - `pr.json`: GitHub PR metadata from `gh pr view`.
 - `raw.diff`: raw unified diff from `gh pr diff`.
-- `diff.json`: parsed diff, stable IDs, line content, file/hunk/line structure.
 - `scoring-prompt.md`: prompt that instructs Codex / Claude Code to read `diff.json` and write `attention.json`.
-- `attention.json`: AI-produced scores and reasons, referencing only IDs from `diff.json`.
-- `validation.json`: validation result for `attention.json`.
 
 `scoring-input.json` must not be generated in the MVP flow.
 
@@ -34,7 +32,7 @@ Required artifacts:
 
 - `src/diff/parseUnifiedDiff.mjs`: parse raw unified diff into `diff.json`.
 - `src/prompt/createScoringPrompt.mjs`: embed `diff.json` and the `attention.json` schema instructions.
-- `src/run/prepareRun.mjs`: write run artifacts except `attention.json` and `validation.json`.
+- `src/run/prepareRun.mjs`: write `diff.json`, and write debug artifacts only when `keepArtifacts` is enabled.
 - `src/attention/validateAttention.mjs`: validate schema, unknown fields, duplicate IDs, missing file/hunk coverage, and line references.
 - `src/server/viewerServer.mjs`: serve the fixed viewer and run artifacts.
 - `src/viewer/*`: render unified/split diff from `diff.json` + validated `attention.json`.
@@ -76,7 +74,7 @@ Warnings:
 - Fixed hunk labels are Japanese.
 - AI-generated reasons, questions, labels, and group reasons should be Japanese.
 - Repeated line labels for the same attention group are rendered once per view.
-- If `validation.json` exists and is invalid, ignore `attention.json` and fall back to plain diff.
+- If validation output is invalid, ignore `attention.json` and fall back to plain diff. `validation.json` is not written during normal validation.
 
 ## Verification
 
@@ -86,4 +84,4 @@ Run:
 npm test
 ```
 
-Expected result: all tests pass, including checks that `scoring-input.json` is not written.
+Expected result: all tests pass, including checks that normal runs keep only `diff.json` plus user-created `attention.json`, and that `scoring-input.json` is not written.

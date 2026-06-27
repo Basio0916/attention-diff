@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseUnifiedDiff } from "../diff/parseUnifiedDiff.mjs";
 import { createScoringPrompt } from "../prompt/createScoringPrompt.mjs";
@@ -8,7 +8,8 @@ export async function prepareRun({
   workspaceDir,
   prSpecifier,
   runGh,
-  generatedAt = new Date().toISOString()
+  generatedAt = new Date().toISOString(),
+  keepArtifacts = false
 }) {
   const prSpecifierRepo = repoFromPrUrl(prSpecifier);
   const cwdRepo = prSpecifierRepo
@@ -33,13 +34,27 @@ export async function prepareRun({
   const runDir = join(workspaceDir, ".attention-diff", "runs", runId);
 
   await mkdir(runDir, { recursive: true });
-  await writeJson(join(runDir, "pr.json"), pr);
-  await writeFile(join(runDir, "raw.diff"), rawDiff);
+  if (!keepArtifacts) {
+    await removeDebugArtifacts(runDir);
+  }
   await writeJson(join(runDir, "diff.json"), diffJson);
-  await writeFile(join(runDir, "scoring-prompt.md"), createScoringPrompt({ diffJson }));
+  if (keepArtifacts) {
+    await writeJson(join(runDir, "pr.json"), pr);
+    await writeFile(join(runDir, "raw.diff"), rawDiff);
+    await writeFile(join(runDir, "scoring-prompt.md"), createScoringPrompt({ diffJson }));
+  }
   await writeJson(join(workspaceDir, ".attention-diff", "current-run.json"), { runId });
 
   return { runId, runDir, diffJson };
+}
+
+async function removeDebugArtifacts(runDir) {
+  await Promise.all([
+    rm(join(runDir, "pr.json"), { force: true }),
+    rm(join(runDir, "raw.diff"), { force: true }),
+    rm(join(runDir, "scoring-prompt.md"), { force: true }),
+    rm(join(runDir, "validation.json"), { force: true })
+  ]);
 }
 
 async function writeJson(path, value) {

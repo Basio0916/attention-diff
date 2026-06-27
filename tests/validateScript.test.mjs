@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -106,7 +106,7 @@ async function writeRunFiles(runDir, { diffJson, attentionJson }) {
   await writeFile(join(runDir, "attention.json"), `${JSON.stringify(attentionJson, null, 2)}\n`);
 }
 
-test("attention-diff-validate exits 0 and writes validation.json for valid attention", async () => {
+test("attention-diff-validate exits 0 and prints validation result for valid attention", async () => {
   const runDir = await mkdtemp(join(tmpdir(), "attention-diff-validate-"));
   const diffJson = await createDiffJson();
   const attentionJson = createValidAttentionJson(diffJson);
@@ -115,18 +115,17 @@ test("attention-diff-validate exits 0 and writes validation.json for valid atten
     await writeRunFiles(runDir, { diffJson, attentionJson });
 
     const result = await runValidateScript(runDir);
-    const validationJson = JSON.parse(await readFile(join(runDir, "validation.json"), "utf8"));
 
     assert.equal(result.code, 0);
-    assert.deepEqual(validationJson, { valid: true, errors: [], warnings: [] });
-    assert.deepEqual(JSON.parse(result.stdout), validationJson);
+    assert.deepEqual(JSON.parse(result.stdout), { valid: true, errors: [], warnings: [] });
     assert.equal(result.stderr, "");
+    await assert.rejects(access(join(runDir, "validation.json")));
   } finally {
     await rm(runDir, { recursive: true, force: true });
   }
 });
 
-test("attention-diff-validate exits non-zero and writes validation.json for invalid attention", async () => {
+test("attention-diff-validate exits non-zero and prints validation result for invalid attention", async () => {
   const runDir = await mkdtemp(join(tmpdir(), "attention-diff-validate-"));
   const diffJson = await createDiffJson();
   const attentionJson = createValidAttentionJson(diffJson);
@@ -136,19 +135,19 @@ test("attention-diff-validate exits non-zero and writes validation.json for inva
     await writeRunFiles(runDir, { diffJson, attentionJson });
 
     const result = await runValidateScript(runDir);
-    const validationJson = JSON.parse(await readFile(join(runDir, "validation.json"), "utf8"));
+    const validationJson = JSON.parse(result.stdout);
 
     assert.equal(result.code, 1);
     assert.equal(validationJson.valid, false);
     assert.match(validationJson.errors.join("\n"), /targetDiffId/);
-    assert.deepEqual(JSON.parse(result.stdout), validationJson);
     assert.equal(result.stderr, "");
+    await assert.rejects(access(join(runDir, "validation.json")));
   } finally {
     await rm(runDir, { recursive: true, force: true });
   }
 });
 
-test("attention-diff-validate writes validation.json for malformed attention", async () => {
+test("attention-diff-validate prints validation result for malformed attention", async () => {
   const runDir = await mkdtemp(join(tmpdir(), "attention-diff-validate-"));
   const diffJson = await createDiffJson();
 
@@ -157,20 +156,20 @@ test("attention-diff-validate writes validation.json for malformed attention", a
     await writeFile(join(runDir, "attention.json"), "{ invalid json\n");
 
     const result = await runValidateScript(runDir);
-    const validationJson = JSON.parse(await readFile(join(runDir, "validation.json"), "utf8"));
+    const validationJson = JSON.parse(result.stdout);
 
     assert.equal(result.code, 1);
     assert.equal(validationJson.valid, false);
     assert.match(validationJson.errors.join("\n"), /attention\.json/);
     assert.deepEqual(validationJson.warnings, []);
-    assert.deepEqual(JSON.parse(result.stdout), validationJson);
     assert.equal(result.stderr, "");
+    await assert.rejects(access(join(runDir, "validation.json")));
   } finally {
     await rm(runDir, { recursive: true, force: true });
   }
 });
 
-test("attention-diff-validate writes validation.json for missing attention", async () => {
+test("attention-diff-validate prints validation result for missing attention", async () => {
   const runDir = await mkdtemp(join(tmpdir(), "attention-diff-validate-"));
   const diffJson = await createDiffJson();
 
@@ -178,14 +177,14 @@ test("attention-diff-validate writes validation.json for missing attention", asy
     await writeFile(join(runDir, "diff.json"), `${JSON.stringify(diffJson, null, 2)}\n`);
 
     const result = await runValidateScript(runDir);
-    const validationJson = JSON.parse(await readFile(join(runDir, "validation.json"), "utf8"));
+    const validationJson = JSON.parse(result.stdout);
 
     assert.equal(result.code, 1);
     assert.equal(validationJson.valid, false);
     assert.match(validationJson.errors.join("\n"), /attention\.json/);
     assert.deepEqual(validationJson.warnings, []);
-    assert.deepEqual(JSON.parse(result.stdout), validationJson);
     assert.equal(result.stderr, "");
+    await assert.rejects(access(join(runDir, "validation.json")));
   } finally {
     await rm(runDir, { recursive: true, force: true });
   }
