@@ -1,0 +1,21 @@
+{
+  "name": "attention-diff",
+  "interface": {
+    "displayName": "Attention Diff"
+  },
+  "plugins": [
+    {
+      "name": "attention-diff",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
+

@@ -1,0 +1,19 @@
+diff --git a/src/billing/discountPolicy.ts b/src/billing/discountPolicy.ts
+index 1111111..2222222 100644
+--- a/src/billing/discountPolicy.ts
++++ b/src/billing/discountPolicy.ts
+@@ -10,7 +10,7 @@ export function shouldApplyVolumeDiscount(user: User, plan: Plan) {
+-  if (plan === "enterprise") {
++  if (plan === "enterprise" || user.isTrial) {
+     return true
+   }
+ 
+diff --git a/src/billing/formatter.ts b/src/billing/formatter.ts
+index 3333333..4444444 100644
+--- a/src/billing/formatter.ts
++++ b/src/billing/formatter.ts
+@@ -1,3 +1,4 @@
++import { formatCurrency } from "@/utils/currency"
+ 
+ export function renderAmount(amountCents: number) {
+   return `${amountCents}`

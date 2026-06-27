@@ -1,0 +1,10 @@
+{
+  "number": 190,
+  "title": "Add trial discount handling",
+  "body": "Adds trial users to the discount policy.",
+  "baseRefName": "main",
+  "headRefName": "feature/trial-discount",
+  "baseRefOid": "abc1234567890",
+  "headRefOid": "def4567890abc",
+  "url": "https://github.com/example/repo/pull/190"
+}

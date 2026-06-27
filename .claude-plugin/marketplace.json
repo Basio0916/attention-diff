@@ -1,0 +1,17 @@
+{
+  "name": "attention-diff",
+  "metadata": {
+    "description": "AI-scored attention heatmaps for GitHub pull request diffs"
+  },
+  "owner": {
+    "name": "Attention Diff contributors",
+    "url": "https://github.com/Basio0916"
+  },
+  "plugins": [
+    {
+      "name": "attention-diff",
+      "source": "./",
+      "description": "Prepare PR diff artifacts, generate attention scores with Claude Code or Codex, validate them, and render a local viewer."
+    }
+  ]
+}

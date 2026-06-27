@@ -1,0 +1,28 @@
+{
+  "name": "attention-diff",
+  "version": "0.1.0",
+  "description": "Render GitHub PR diffs with AI-scored attention heatmaps.",
+  "author": {
+    "name": "Attention Diff contributors"
+  },
+  "homepage": "https://github.com/Basio0916/attention-diff",
+  "repository": "https://github.com/Basio0916/attention-diff",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Attention Diff",
+    "shortDescription": "Render PR diffs with AI-scored attention heatmaps.",
+    "longDescription": "Attention Diff prepares GitHub PR diff artifacts, asks Codex or Claude Code to write attention scores and reasons, validates the JSON, and serves a local diff heatmap viewer.",
+    "developerName": "Attention Diff contributors",
+    "category": "Productivity",
+    "capabilities": [
+      "Write",
+      "Interactive"
+    ],
+    "websiteURL": "https://github.com/Basio0916/attention-diff",
+    "defaultPrompt": [
+      "Run Attention Diff for PR 190",
+      "Show this PR as an attention diff",
+      "Validate the generated attention.json"
+    ]
+  }
+}

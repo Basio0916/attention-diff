@@ -1,0 +1,16 @@
+{
+  "name": "attention-diff",
+  "description": "Render GitHub PR diffs with AI-scored attention heatmaps.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Attention Diff contributors"
+  },
+  "homepage": "https://github.com/Basio0916/attention-diff",
+  "repository": "https://github.com/Basio0916/attention-diff",
+  "keywords": [
+    "code-review",
+    "diff",
+    "github",
+    "pull-request"
+  ]
+}

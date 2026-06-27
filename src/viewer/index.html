@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Attention Diff</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>Attention Diff</h1>
+        <p id="subtitle">Loading run...</p>
+      </div>
+      <div class="topbar-controls">
+        <div class="segmented-control" aria-label="テーマ切り替え">
+          <button type="button" id="themeSystemButton">System</button>
+          <button type="button" id="themeLightButton">Light</button>
+          <button type="button" id="themeDarkButton">Dark</button>
+        </div>
+        <div class="segmented-control" aria-label="diff表示切り替え">
+          <button type="button" id="unifiedButton" class="active">Unified</button>
+          <button type="button" id="splitButton">Split</button>
+        </div>
+      </div>
+    </header>
+    <main id="app" class="app-shell" aria-live="polite"></main>
+    <script src="/vendor/highlight.min.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

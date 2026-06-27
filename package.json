@@ -1,0 +1,20 @@
+{
+  "name": "attention-diff",
+  "version": "0.1.0",
+  "description": "Render GitHub PR diffs with AI-scored attention heatmaps.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Basio0916/attention-diff.git"
+  },
+  "bin": {
+    "attention-diff": "scripts/attention-diff.mjs"
+  },
+  "scripts": {
+    "attention-diff": "node scripts/attention-diff.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
