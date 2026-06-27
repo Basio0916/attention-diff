@@ -52,7 +52,13 @@ function createFile({ id, oldPath, newPath }) {
   };
 }
 
-export function parseUnifiedDiff({ rawDiff, pr, repo, generatedAt = new Date().toISOString() }) {
+export function parseUnifiedDiff({
+  rawDiff,
+  pr,
+  repo,
+  generatedAt = new Date().toISOString(),
+  workspacePath = null
+}) {
   const files = [];
   const lines = rawDiff.split(/\r?\n/);
   if (lines.at(-1) === "") {
@@ -191,21 +197,26 @@ export function parseUnifiedDiff({ rawDiff, pr, repo, generatedAt = new Date().t
     }
   }
 
+  const source = {
+    provider: "github",
+    repo,
+    prNumber: pr.number,
+    baseRef: pr.baseRefName,
+    headRef: pr.headRefName,
+    baseSha: pr.baseRefOid,
+    headSha: pr.headRefOid,
+    title: pr.title,
+    url: pr.url
+  };
+  if (typeof workspacePath === "string" && workspacePath.trim() !== "") {
+    source.workspacePath = workspacePath;
+  }
+
   return {
     schemaVersion: SCHEMA_VERSION,
     diffId: sha256(rawDiff),
     generatedAt,
-    source: {
-      provider: "github",
-      repo,
-      prNumber: pr.number,
-      baseRef: pr.baseRefName,
-      headRef: pr.headRefName,
-      baseSha: pr.baseRefOid,
-      headSha: pr.headRefOid,
-      title: pr.title,
-      url: pr.url
-    },
+    source,
     files
   };
 }

@@ -172,6 +172,14 @@ test("viewer styles preserve muted syntax color categories on changed heat rows"
   assert.match(styles, /color: var\(--syntax-heat-comment\);/);
 });
 
+test("viewer styles include editor link affordances without dropdown menu styles", async () => {
+  const styles = await readFile("src/viewer/styles.css", "utf8");
+
+  assert.match(styles, /\.open-editor-link/);
+  assert.match(styles, /\.line-number-link/);
+  assert.doesNotMatch(styles, /\.open-menu/);
+});
+
 test("viewer app renders fixed reason labels in Japanese", async () => {
   const app = await readFile("src/viewer/app.js", "utf8");
 
@@ -315,6 +323,112 @@ test("viewer app renders one label chip per attention group in each diff view", 
 
   assert.equal((app.innerHTML.match(/同じ指摘/g) || []).length, 2);
   assert.match(app.innerHTML, /heat-add-3/);
+});
+
+test("viewer app renders VS Code hunk and line links when workspacePath exists", async () => {
+  const script = await readFile("src/viewer/app.js", "utf8");
+  const { app, context } = createViewerVmContext({
+    diffJson: {
+      source: {
+        repo: "example/repo",
+        title: "Example PR",
+        workspacePath: "/Users/example/repo"
+      },
+      files: [
+        {
+          id: "file_0001",
+          path: "src/example.js",
+          status: "modified",
+          additions: 1,
+          deletions: 1,
+          hunks: [
+            {
+              id: "file_0001_hunk_0001",
+              header: "@@ -9,2 +9,2 @@",
+              lines: [
+                {
+                  id: "file_0001_hunk_0001_line_0001",
+                  type: "remove",
+                  oldLine: 9,
+                  newLine: null,
+                  content: "old value"
+                },
+                {
+                  id: "file_0001_hunk_0001_line_0002",
+                  type: "add",
+                  oldLine: null,
+                  newLine: 9,
+                  content: "new value"
+                },
+                {
+                  id: "file_0001_hunk_0001_line_0003",
+                  type: "context",
+                  oldLine: 10,
+                  newLine: 10,
+                  content: "context value"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    attentionJson: { files: [] },
+    validationJson: { valid: true, errors: [], warnings: [] }
+  });
+
+  vm.createContext(context);
+  vm.runInContext(script, context);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.match(app.innerHTML, /VS Codeで開く/);
+  assert.match(app.innerHTML, /class="open-editor-link"/);
+  assert.match(app.innerHTML, /class="line-number-link"/);
+  assert.match(app.innerHTML, /href="vscode:\/\/file\/\/Users\/example\/repo\/src\/example\.js:9:1"/);
+  assert.match(app.innerHTML, /href="vscode:\/\/file\/\/Users\/example\/repo\/src\/example\.js:10:1"/);
+  assert.doesNotMatch(app.innerHTML, /open-menu/);
+});
+
+test("viewer app hides editor links when workspacePath is missing", async () => {
+  const script = await readFile("src/viewer/app.js", "utf8");
+  const { app, context } = createViewerVmContext({
+    diffJson: {
+      source: { repo: "example/repo", title: "Example PR" },
+      files: [
+        {
+          id: "file_0001",
+          path: "src/example.js",
+          status: "modified",
+          additions: 1,
+          deletions: 0,
+          hunks: [
+            {
+              id: "file_0001_hunk_0001",
+              header: "@@ -1 +1 @@",
+              lines: [
+                {
+                  id: "file_0001_hunk_0001_line_0001",
+                  type: "add",
+                  oldLine: null,
+                  newLine: 1,
+                  content: "changed"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    attentionJson: { files: [] },
+    validationJson: { valid: true, errors: [], warnings: [] }
+  });
+
+  vm.createContext(context);
+  vm.runInContext(script, context);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.doesNotMatch(app.innerHTML, /VS Codeで開く/);
+  assert.doesNotMatch(app.innerHTML, /vscode:\/\/file/);
 });
 
 test("viewer app syntax-highlights code using language inferred from file path", async () => {

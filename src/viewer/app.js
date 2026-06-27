@@ -7,6 +7,14 @@ const themeLightButton = document.querySelector("#themeLightButton");
 const themeDarkButton = document.querySelector("#themeDarkButton");
 const THEME_STORAGE_KEY = "attention-diff-theme";
 const THEME_OPTIONS = new Set(["system", "light", "dark"]);
+const OPEN_TARGETS = {
+  vscode: {
+    label: "VS Code",
+    createUrl(location) {
+      return `vscode://file/${encodeURI(location.absolutePath)}:${location.line}:${location.column}`;
+    }
+  }
+};
 let currentThemePreference = "system";
 
 function deriveRunId() {
@@ -295,12 +303,108 @@ function renderLabel(group, lineId, labelLineIds) {
   return `<span class="label-chip" title="${escapeHtml(group.reason)}">${escapeHtml(group.label)}</span>`;
 }
 
-function renderUnifiedLine(line, attentionIndex, labelLineIds, filePath) {
+function isValidLineNumber(value) {
+  return Number.isInteger(value) && value > 0;
+}
+
+function resolveLineTarget(lines, line) {
+  if (isValidLineNumber(line?.newLine)) {
+    return line.newLine;
+  }
+
+  const index = (lines || []).findIndex((candidate) => candidate?.id === line?.id);
+  if (index < 0) {
+    return null;
+  }
+
+  for (let offset = index + 1; offset < lines.length; offset += 1) {
+    if (isValidLineNumber(lines[offset]?.newLine)) {
+      return lines[offset].newLine;
+    }
+  }
+
+  for (let offset = index - 1; offset >= 0; offset -= 1) {
+    if (isValidLineNumber(lines[offset]?.newLine)) {
+      return lines[offset].newLine;
+    }
+  }
+
+  return null;
+}
+
+function resolveFileLocation(workspacePath, filePath, lineNumber) {
+  if (
+    typeof workspacePath !== "string" ||
+    workspacePath.trim() === "" ||
+    typeof filePath !== "string" ||
+    filePath.trim() === "" ||
+    filePath === "/dev/null" ||
+    !isValidLineNumber(lineNumber)
+  ) {
+    return null;
+  }
+
+  const root = workspacePath.replace(/\/+$/, "");
+  const relativePath = filePath.replace(/^\/+/, "");
+  return {
+    absolutePath: `${root}/${relativePath}`,
+    line: lineNumber,
+    column: 1
+  };
+}
+
+function createOpenUrl(workspacePath, filePath, lineNumber, target = OPEN_TARGETS.vscode) {
+  const location = resolveFileLocation(workspacePath, filePath, lineNumber);
+  return location ? target.createUrl(location) : null;
+}
+
+function firstOpenableLine(lines) {
+  for (const line of lines || []) {
+    if (isValidLineNumber(line?.newLine)) {
+      return line.newLine;
+    }
+  }
+  return null;
+}
+
+function renderOpenEditorLink(hunk, filePath, workspacePath) {
+  const lineNumber = firstOpenableLine(hunk.lines || []);
+  const href = createOpenUrl(workspacePath, filePath, lineNumber);
+  if (!href) {
+    return "";
+  }
+
+  return `
+    <a class="open-editor-link" href="${escapeHtml(href)}" title="${escapeHtml(`${filePath}:${lineNumber} を ${OPEN_TARGETS.vscode.label} で開く`)}">
+      ${escapeHtml(`${OPEN_TARGETS.vscode.label}で開く`)}
+    </a>
+  `;
+}
+
+function renderHunkHeader(hunk, filePath, workspacePath) {
+  return `
+    <div class="hunk-header">
+      <span class="hunk-title">${escapeHtml(hunk.header)}</span>
+      ${renderOpenEditorLink(hunk, filePath, workspacePath)}
+    </div>
+  `;
+}
+
+function renderLineNumber(value, href) {
+  if (!href || value === null || value === undefined) {
+    return escapeHtml(value ?? "");
+  }
+
+  return `<a class="line-number-link" href="${escapeHtml(href)}" title="${escapeHtml(`${OPEN_TARGETS.vscode.label}で開く`)}">${escapeHtml(value)}</a>`;
+}
+
+function renderUnifiedLine(line, attentionIndex, labelLineIds, filePath, hunkLines, workspacePath) {
   const group = attentionIndex.lines.get(line.id);
+  const href = createOpenUrl(workspacePath, filePath, resolveLineTarget(hunkLines, line));
   return `
     <tr class="${lineClasses(line, group)}">
-      <td class="line-number">${escapeHtml(line.oldLine ?? "")}</td>
-      <td class="line-number">${escapeHtml(line.newLine ?? "")}</td>
+      <td class="line-number">${renderLineNumber(line.oldLine, href)}</td>
+      <td class="line-number">${renderLineNumber(line.newLine, href)}</td>
       <td class="marker">${escapeHtml(markerForLine(line))}</td>
       <td class="code">${highlightCode(line.content, filePath)}</td>
       <td class="label-cell">${renderLabel(group, line.id, labelLineIds)}</td>
@@ -333,7 +437,7 @@ function createSplitRows(lines) {
   return rows;
 }
 
-function renderSplitSide(line, attentionIndex, side, labelLineIds, filePath) {
+function renderSplitSide(line, attentionIndex, side, labelLineIds, filePath, hunkLines, workspacePath) {
   if (!line) {
     return `
       <td class="line-number"></td>
@@ -345,37 +449,42 @@ function renderSplitSide(line, attentionIndex, side, labelLineIds, filePath) {
 
   const group = attentionIndex.lines.get(line.id);
   const lineNumber = side === "old" ? line.oldLine : line.newLine;
+  const href = createOpenUrl(workspacePath, filePath, resolveLineTarget(hunkLines, line));
   const classes = lineClasses(line, group);
   return `
-    <td class="line-number">${escapeHtml(lineNumber ?? "")}</td>
+    <td class="line-number">${renderLineNumber(lineNumber, href)}</td>
     <td class="marker">${escapeHtml(markerForLine(line))}</td>
     <td class="code split-code ${classes}">${highlightCode(line.content, filePath)}</td>
     <td class="label-cell ${classes}">${renderLabel(group, line.id, labelLineIds)}</td>
   `;
 }
 
-function renderSplitRow(row, attentionIndex, labelLineIds, filePath) {
+function renderSplitRow(row, attentionIndex, labelLineIds, filePath, hunkLines, workspacePath) {
   return `
     <tr class="split-row">
-      ${renderSplitSide(row.left, attentionIndex, "old", labelLineIds, filePath)}
-      ${renderSplitSide(row.right, attentionIndex, "new", labelLineIds, filePath)}
+      ${renderSplitSide(row.left, attentionIndex, "old", labelLineIds, filePath, hunkLines, workspacePath)}
+      ${renderSplitSide(row.right, attentionIndex, "new", labelLineIds, filePath, hunkLines, workspacePath)}
     </tr>
   `;
 }
 
-function renderHunk(hunk, attentionIndex, filePath) {
+function renderHunk(hunk, attentionIndex, filePath, workspacePath) {
   const hunkAttention = attentionIndex.hunks.get(hunk.id);
   const labelLineIds = createLabelLineIds(hunk.lines || [], attentionIndex);
   const unifiedRows = (hunk.lines || [])
-    .map((line) => renderUnifiedLine(line, attentionIndex, labelLineIds, filePath))
+    .map((line) =>
+      renderUnifiedLine(line, attentionIndex, labelLineIds, filePath, hunk.lines || [], workspacePath)
+    )
     .join("");
   const splitRows = createSplitRows(hunk.lines || [])
-    .map((row) => renderSplitRow(row, attentionIndex, labelLineIds, filePath))
+    .map((row) =>
+      renderSplitRow(row, attentionIndex, labelLineIds, filePath, hunk.lines || [], workspacePath)
+    )
     .join("");
 
   return `
     <section class="hunk">
-      <div class="hunk-header">${escapeHtml(hunk.header)}</div>
+      ${renderHunkHeader(hunk, filePath, workspacePath)}
       ${renderReasonGrid(hunkAttention)}
       <table class="diff-table unified-diff-table">
         <tbody>${unifiedRows}</tbody>
@@ -387,9 +496,9 @@ function renderHunk(hunk, attentionIndex, filePath) {
   `;
 }
 
-function renderFile(file, attentionIndex) {
+function renderFile(file, attentionIndex, workspacePath) {
   const hunkHtml = (file.hunks || [])
-    .map((hunk) => renderHunk(hunk, attentionIndex, file.path))
+    .map((hunk) => renderHunk(hunk, attentionIndex, file.path, workspacePath))
     .join("");
   const meta = `${file.status} / +${file.additions} -${file.deletions}`;
 
@@ -407,8 +516,9 @@ function renderFile(file, attentionIndex) {
 function renderDiff(diffJson, attentionJson) {
   const attentionIndex = indexAttention(attentionJson);
   const files = diffJson.files || [];
+  const workspacePath = diffJson.source?.workspacePath;
   const sidebar = renderSidebar(files, attentionIndex);
-  const content = files.map((file) => renderFile(file, attentionIndex)).join("");
+  const content = files.map((file) => renderFile(file, attentionIndex, workspacePath)).join("");
 
   app.innerHTML = `
     ${sidebar}

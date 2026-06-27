@@ -59,6 +59,21 @@ test("parseUnifiedDiff creates files, hunks, line ids, and line numbers", async 
   assert.equal(secondHunk.lines.some((line) => line.type === "meta" && line.content === ""), false);
 });
 
+test("parseUnifiedDiff includes workspacePath when provided", async () => {
+  const rawDiff = await readFile("tests/fixtures/simple.diff", "utf8");
+  const pr = JSON.parse(await readFile("tests/fixtures/simple-pr.json", "utf8"));
+
+  const diffJson = parseUnifiedDiff({
+    rawDiff,
+    pr,
+    repo: "example/repo",
+    generatedAt: "2026-06-27T00:00:00.000Z",
+    workspacePath: "/Users/example/repo"
+  });
+
+  assert.equal(diffJson.source.workspacePath, "/Users/example/repo");
+});
+
 test("parseUnifiedDiff handles file statuses and real unified diff meta lines", async () => {
   const rawDiff = `diff --git a/src/new.ts b/src/new.ts
 new file mode 100644

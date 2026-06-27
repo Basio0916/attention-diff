@@ -53,6 +53,7 @@ test("prepareRun writes only stable run artifacts by default", async () => {
       ["pr", "diff", "190"]
     ]);
     assert.equal(diffJson.files.length, 2);
+    assert.equal(diffJson.source.workspacePath, workspaceDir);
     assert.deepEqual(currentRun, { runId: result.runId });
     assert.equal(Object.hasOwn(result, "scoringPrompt"), false);
     await assert.rejects(access(join(result.runDir, "pr.json")));

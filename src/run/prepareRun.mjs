@@ -25,7 +25,13 @@ export async function prepareRun({
   const rawDiff = await runGh(["pr", "diff", prSpecifier]);
   const pr = JSON.parse(prJsonText);
   const repo = prSpecifierRepo || repoFromPrUrl(pr.url) || cwdRepo;
-  const diffJson = parseUnifiedDiff({ rawDiff, pr, repo, generatedAt });
+  const diffJson = parseUnifiedDiff({
+    rawDiff,
+    pr,
+    repo,
+    generatedAt,
+    workspacePath: workspaceDir
+  });
   const runId = createRunId({
     prNumber: pr.number,
     headSha: pr.headRefOid,
